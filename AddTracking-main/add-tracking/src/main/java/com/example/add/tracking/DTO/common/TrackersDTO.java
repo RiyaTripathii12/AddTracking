@@ -8,6 +8,8 @@ import lombok.Data;
 
 @Data
 public class TrackersDTO {
+    
+    private String id;
 
     @JsonProperty("transaction_id")
     private String transactionId;
