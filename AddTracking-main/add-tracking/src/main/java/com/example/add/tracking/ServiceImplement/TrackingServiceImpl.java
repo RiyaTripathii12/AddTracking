@@ -48,15 +48,13 @@ public class TrackingServiceImpl implements TrackingService {
         res.setTrackingNumberType(saved.getTrackingNumberType());
         res.setStatus(saved.getStatus());
         res.setCarrier(saved.getCarrier());
-
-        // 🔧 FIXED: no nulls
         res.setPostagePaymentId("PP123456789");
         res.setQuantity(1);
         res.setTrackingNumberValidated(true);
         res.setShipmentUploader("MERCHANT");
         res.setAccountId("ABCD1234EFGH");
 
-        // 🔗 links
+        // links
         LinksDTO link = new LinksDTO();
         link.setHref("https://api-m.paypal.com/v1/shipping/trackers/" + saved.getId());
         link.setRel("self");
@@ -64,7 +62,7 @@ public class TrackingServiceImpl implements TrackingService {
 
         res.setLinks(Arrays.asList(link));
 
-        // ⏱ dates (safe)
+        // dates 
         if (saved.getShipmentDate() != null) {
             res.setShipmentDate(
                 saved.getShipmentDate()
