@@ -31,7 +31,7 @@ public class TrackersController {
         this.trackingService = trackingService;
     }
 
-    // ✅ Add Single
+    //  Add Single
     @PostMapping("/path")
     public AddSingleTrackingResponseDTO addTracking(
             @RequestBody AddSingleTrackingRequestDTO requestDTO) {
@@ -39,7 +39,7 @@ public class TrackersController {
         return trackingService.addSingleTracking(requestDTO);
     }
 
-    // ✅ Add Multiple
+    //  Add Multiple
     @PostMapping("/multiple")
     public AddMultipleTrackingResponseDTO addMultipleTracking(
             @RequestBody AddMultipleTrackingRequestDTO requestDTO) {
@@ -47,7 +47,7 @@ public class TrackersController {
         return trackingService.addMultipleTracking(requestDTO);
     }
 
-    // ✅ List
+    // List
     @GetMapping
     public ListTrackingResponseDTO listTracking(
             @RequestParam(required = false) String transaction_id,
@@ -57,7 +57,7 @@ public class TrackersController {
         return trackingService.listTracking(transaction_id, tracking_number, account_id);
     }
 
-    // ✅ Show (UUID)
+    //  Show (UUID)
     @GetMapping("/{id}")
     public ShowTrackingResponseDTO showTracking(
             @PathVariable String id,
@@ -66,7 +66,7 @@ public class TrackersController {
         return trackingService.showTracking(id, account_id);
     }
 
-    // ✅ Update (UUID)
+    // Update (UUID)
     @PutMapping("/{id}")
     public UpdateTrackingResponseDTO updateTracking(
             @PathVariable String id,

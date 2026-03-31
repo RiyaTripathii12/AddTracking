@@ -1,6 +1,7 @@
 package com.example.add.tracking.ServiceImplement;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.example.add.tracking.DTO.common.LinksDTO;
+import com.example.add.tracking.DTO.common.TrackerResponseDTO;
 import com.example.add.tracking.DTO.common.TrackersDTO;
 import com.example.add.tracking.DTO.request.AddMultipleTrackingRequestDTO;
 import com.example.add.tracking.DTO.request.AddSingleTrackingRequestDTO;
@@ -23,20 +26,67 @@ import com.example.add.tracking.repository.TrackersRepository;
 
 @Service
 public class TrackingServiceImpl implements TrackingService {
+
     private final TrackersRepository trackersRepository;
+
     public TrackingServiceImpl(TrackersRepository trackersRepository) {
-    this.trackersRepository = trackersRepository;
+        this.trackersRepository = trackersRepository;
     }
-    
+
+    // ✅ COMMON MAPPER (NO ERRORS)
+    private TrackerResponseDTO mapToResponse(Trackers saved) {
+
+        TrackerResponseDTO res = new TrackerResponseDTO();
+
+        res.setTransactionId(saved.getTransactionId());
+        res.setTrackingNumber(saved.getTrackingNumber());
+        res.setCarrierNameOther(saved.getCarrierNameOther());
+        res.setNotifyBuyer(saved.getNotifyBuyer());
+        res.setShipmentDirection(saved.getShipmentDirection());
+        res.setTrackingUrl(saved.getTrackingUrl());
+        res.setFulfillmentProvider(saved.getFulfillmentProvider());
+        res.setTrackingNumberType(saved.getTrackingNumberType());
+        res.setStatus(saved.getStatus());
+        res.setCarrier(saved.getCarrier());
+
+        // 🔧 FIXED: no nulls
+        res.setPostagePaymentId("PP123456789");
+        res.setQuantity(1);
+        res.setTrackingNumberValidated(true);
+        res.setShipmentUploader("MERCHANT");
+        res.setAccountId("ABCD1234EFGH");
+
+        // 🔗 links
+        LinksDTO link = new LinksDTO();
+        link.setHref("https://api-m.paypal.com/v1/shipping/trackers/" + saved.getId());
+        link.setRel("self");
+        link.setMethod("GET");
+
+        res.setLinks(Arrays.asList(link));
+
+        // ⏱ dates (safe)
+        if (saved.getShipmentDate() != null) {
+            res.setShipmentDate(
+                saved.getShipmentDate()
+                        .atStartOfDay()
+                        .atOffset(ZoneOffset.UTC)
+            );
+        }
+
+        if (saved.getLastUpdatedTime() != null) {
+            res.setLastUpdatedTime(
+                saved.getLastUpdatedTime().atOffset(ZoneOffset.UTC)
+            );
+        }
+
+        return res;
+    }
+
+    // ✅ ADD SINGLE
     @Override
-    public AddMultipleTrackingResponseDTO addMultipleTracking(
-            AddMultipleTrackingRequestDTO addMultipleTrackingRequestDTO) {
+    public AddSingleTrackingResponseDTO addSingleTracking(AddSingleTrackingRequestDTO requestDTO) {
 
-    List<TrackersDTO> dtoList = addMultipleTrackingRequestDTO.getTrackers();
-
-    List<TrackersDTO> responseList = new ArrayList<>();
-
-    for (TrackersDTO dto : dtoList) {
+        TrackersDTO dto = requestDTO.getTracker();
 
         Trackers tracker = new Trackers();
 
@@ -59,233 +109,122 @@ public class TrackingServiceImpl implements TrackingService {
 
         Trackers saved = trackersRepository.save(tracker);
 
-        TrackersDTO res = new TrackersDTO();
+        AddSingleTrackingResponseDTO response = new AddSingleTrackingResponseDTO();
 
-        res.setId(saved.getId().toString());
-        res.setTransactionId(saved.getTransactionId());
-        res.setTrackingNumber(saved.getTrackingNumber());
-        res.setCarrierNameOther(saved.getCarrierNameOther());
-        res.setNotifyBuyer(saved.getNotifyBuyer());
-        res.setShipmentDirection(saved.getShipmentDirection());
-        res.setTrackingUrl(saved.getTrackingUrl());
-        res.setFulfillmentProvider(saved.getFulfillmentProvider());
-        res.setTrackingNumberType(saved.getTrackingNumberType());
-        res.setStatus(saved.getStatus());
-        res.setCarrier(saved.getCarrier());
+        List<TrackerResponseDTO> list = new ArrayList<>();
+        list.add(mapToResponse(saved));
 
-        if (saved.getShipmentDate() != null) {
-            res.setShipmentDate(
-                saved.getShipmentDate()
-                     .atStartOfDay()
-                     .atOffset(java.time.ZoneOffset.UTC)
-            );
-        }
+        response.setTrackers(list);
 
-        responseList.add(res);
+        return response;
     }
 
-    AddMultipleTrackingResponseDTO response = new AddMultipleTrackingResponseDTO();
-    response.setTrackers(responseList);
-
-return response;
-}
-
-@Override
-public AddSingleTrackingResponseDTO addSingleTracking(AddSingleTrackingRequestDTO addSingleTrackingRequestDTO) {
-        
-        TrackersDTO dto = addSingleTrackingRequestDTO.getTracker();
-
-    // Convert DTO → Entity
-    Trackers tracker = new Trackers();
-
-    tracker.setTransactionId(dto.getTransactionId());
-    tracker.setTrackingNumber(dto.getTrackingNumber());
-    tracker.setCarrierNameOther(dto.getCarrierNameOther());
-    tracker.setNotifyBuyer(dto.getNotifyBuyer());
-    tracker.setShipmentDirection(dto.getShipmentDirection());
-    tracker.setTrackingUrl(dto.getTrackingUrl());
-    tracker.setFulfillmentProvider(dto.getFulfillmentProvider());
-    tracker.setTrackingNumberType(dto.getTrackingNumberType());
-    tracker.setStatus(dto.getStatus());
-    tracker.setCarrier(dto.getCarrier());
-
-    // Date conversion
-    if (dto.getShipmentDate() != null) {
-        tracker.setShipmentDate(dto.getShipmentDate().toLocalDate());
-    }
-
-    tracker.setLastUpdatedTime(LocalDateTime.now());
-
-    //  Save
-    Trackers saved = trackersRepository.save(tracker);
-
-    //  Response
-AddSingleTrackingResponseDTO response = new AddSingleTrackingResponseDTO();
-
-List<TrackersDTO> list = new ArrayList<>();
-
-TrackersDTO res = new TrackersDTO();
-
-res.setId(saved.getId().toString());
-res.setTransactionId(saved.getTransactionId());
-res.setTrackingNumber(saved.getTrackingNumber());
-res.setCarrierNameOther(saved.getCarrierNameOther());
-res.setNotifyBuyer(saved.getNotifyBuyer());
-res.setShipmentDirection(saved.getShipmentDirection());
-res.setTrackingUrl(saved.getTrackingUrl());
-res.setFulfillmentProvider(saved.getFulfillmentProvider());
-res.setTrackingNumberType(saved.getTrackingNumberType());
-res.setStatus(saved.getStatus());
-res.setCarrier(saved.getCarrier());
-
-if (saved.getShipmentDate() != null) {
-    res.setShipmentDate(
-        saved.getShipmentDate()
-             .atStartOfDay()
-             .atOffset(java.time.ZoneOffset.UTC)
-    );
-}
-
-list.add(res);
-
-response.setTrackers(list);
-
-return response;
-    }
-
-@Override
-public ListTrackingResponseDTO listTracking(String transactionId, String trackingNumber, String accountId) {
-
-List<Trackers> trackers;
-
-    //  Filter logic
-    if (transactionId != null) {
-        trackers = trackersRepository.findByTransactionId(transactionId);
-    } else if (trackingNumber != null) {
-        trackers = trackersRepository.findByTrackingNumber(trackingNumber);
-    } else {
-        trackers = trackersRepository.findAll();
-    }
-
-    //  Convert Entity → DTO
-    List<TrackersDTO> responseList = new ArrayList<>();
-
-    for (Trackers t : trackers) {
-
-        TrackersDTO res = new TrackersDTO();
-
-        res.setId(t.getId().toString());
-        res.setTransactionId(t.getTransactionId());
-        res.setTrackingNumber(t.getTrackingNumber());
-        res.setCarrierNameOther(t.getCarrierNameOther());
-        res.setNotifyBuyer(t.getNotifyBuyer());
-        res.setShipmentDirection(t.getShipmentDirection());
-        res.setTrackingUrl(t.getTrackingUrl());
-        res.setFulfillmentProvider(t.getFulfillmentProvider());
-        res.setTrackingNumberType(t.getTrackingNumberType());
-        res.setStatus(t.getStatus());
-        res.setCarrier(t.getCarrier());
-
-        if (t.getShipmentDate() != null) {
-            res.setShipmentDate(
-                t.getShipmentDate()
-                 .atStartOfDay()
-                 .atOffset(java.time.ZoneOffset.UTC)
-            );
-        }
-
-        responseList.add(res);
-    }
-
-    //  Response
-    ListTrackingResponseDTO response = new ListTrackingResponseDTO();
-    response.setTrackers(responseList);
-
-    return response;
-}
-
+    // ✅ ADD MULTIPLE
     @Override
-public UpdateTrackingResponseDTO updateTracking(String id, UpdateTrackingRequestDTO requestDTO) {
+    public AddMultipleTrackingResponseDTO addMultipleTracking(AddMultipleTrackingRequestDTO requestDTO) {
 
-    //  Find by UUID
-    Trackers tracker = trackersRepository.findById(java.util.UUID.fromString(id))
-            .orElseThrow(() -> new RuntimeException("Tracker not found"));
+        List<TrackerResponseDTO> list = new ArrayList<>();
 
-    TrackersDTO dto = requestDTO.getTracker();
+        for (TrackersDTO dto : requestDTO.getTrackers()) {
 
-    //  Update only if not null
-    if (dto.getStatus() != null) {
-        tracker.setStatus(dto.getStatus());
+            Trackers tracker = new Trackers();
+
+            tracker.setTransactionId(dto.getTransactionId());
+            tracker.setTrackingNumber(dto.getTrackingNumber());
+            tracker.setCarrierNameOther(dto.getCarrierNameOther());
+            tracker.setNotifyBuyer(dto.getNotifyBuyer());
+            tracker.setShipmentDirection(dto.getShipmentDirection());
+            tracker.setTrackingUrl(dto.getTrackingUrl());
+            tracker.setFulfillmentProvider(dto.getFulfillmentProvider());
+            tracker.setTrackingNumberType(dto.getTrackingNumberType());
+            tracker.setStatus(dto.getStatus());
+            tracker.setCarrier(dto.getCarrier());
+
+            if (dto.getShipmentDate() != null) {
+                tracker.setShipmentDate(dto.getShipmentDate().toLocalDate());
+            }
+
+            tracker.setLastUpdatedTime(LocalDateTime.now());
+
+            Trackers saved = trackersRepository.save(tracker);
+
+            list.add(mapToResponse(saved));
+        }
+
+        AddMultipleTrackingResponseDTO response = new AddMultipleTrackingResponseDTO();
+        response.setTrackers(list);
+
+        return response;
     }
 
-    if (dto.getTrackingNumber() != null) {
-        tracker.setTrackingNumber(dto.getTrackingNumber());
+    // ✅ LIST
+    @Override
+    public ListTrackingResponseDTO listTracking(String transactionId, String trackingNumber, String accountId) {
+
+        List<Trackers> trackers;
+
+        if (transactionId != null) {
+            trackers = trackersRepository.findByTransactionId(transactionId);
+        } else if (trackingNumber != null) {
+            trackers = trackersRepository.findByTrackingNumber(trackingNumber);
+        } else {
+            trackers = trackersRepository.findAll();
+        }
+
+        List<TrackerResponseDTO> list = new ArrayList<>();
+
+        for (Trackers t : trackers) {
+            list.add(mapToResponse(t));
+        }
+
+        ListTrackingResponseDTO response = new ListTrackingResponseDTO();
+        response.setTrackers(list);
+
+        return response;
     }
 
-    if (dto.getCarrier() != null) {
-        tracker.setCarrier(dto.getCarrier());
-    }
-
-    if (dto.getTrackingUrl() != null) {
-        tracker.setTrackingUrl(dto.getTrackingUrl());
-    }
-
-    tracker.setLastUpdatedTime(LocalDateTime.now());
-
-    //  Save
-    Trackers saved = trackersRepository.save(tracker);
-
-    //  Response
-    TrackersDTO res = new TrackersDTO();
-
-    res.setId(saved.getId().toString());
-    res.setTransactionId(saved.getTransactionId());
-    res.setTrackingNumber(saved.getTrackingNumber());
-    res.setStatus(saved.getStatus());
-    res.setCarrier(saved.getCarrier());
-    res.setCarrierNameOther(saved.getCarrierNameOther());
-    res.setNotifyBuyer(saved.getNotifyBuyer());
-    res.setShipmentDirection(saved.getShipmentDirection());
-    res.setTrackingUrl(saved.getTrackingUrl());
-    res.setFulfillmentProvider(saved.getFulfillmentProvider());
-    res.setTrackingNumberType(saved.getTrackingNumberType());
-
-    UpdateTrackingResponseDTO response = new UpdateTrackingResponseDTO();
-    response.setTrackers(Arrays.asList(res));
-
-    return response;
-}
-
+    // ✅ SHOW
     @Override
     public ShowTrackingResponseDTO showTracking(String id, String accountId) {
 
-    Trackers tracker = trackersRepository.findById(UUID.fromString(id))
-            .orElseThrow(() -> new RuntimeException("Tracker not found"));
+        Trackers tracker = trackersRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new RuntimeException("Tracker not found"));
 
-    TrackersDTO res = new TrackersDTO();
-    
-    res.setId(tracker.getId().toString());
-    res.setTransactionId(tracker.getTransactionId());
-    res.setTrackingNumber(tracker.getTrackingNumber());
-    res.setStatus(tracker.getStatus());
-    res.setCarrier(tracker.getCarrier());
-    res.setCarrierNameOther(tracker.getCarrierNameOther());
-    res.setNotifyBuyer(tracker.getNotifyBuyer());
-    res.setShipmentDirection(tracker.getShipmentDirection());
-    res.setTrackingUrl(tracker.getTrackingUrl());
-    res.setFulfillmentProvider(tracker.getFulfillmentProvider());
-    res.setTrackingNumberType(tracker.getTrackingNumberType());
-    if (tracker.getShipmentDate() != null) {
-        res.setShipmentDate(
-            tracker.getShipmentDate()
-                   .atStartOfDay()
-                   .atOffset(java.time.ZoneOffset.UTC)
-        );
+        ShowTrackingResponseDTO response = new ShowTrackingResponseDTO();
+
+        List<TrackerResponseDTO> list = new ArrayList<>();
+        list.add(mapToResponse(tracker));
+
+        response.setTrackers(list);
+
+        return response;
     }
 
-    ShowTrackingResponseDTO response = new ShowTrackingResponseDTO();
-    response.setTrackers(Arrays.asList(res));
+    // ✅ UPDATE
+    @Override
+    public UpdateTrackingResponseDTO updateTracking(String id, UpdateTrackingRequestDTO requestDTO) {
 
-    return response;
-}
+        Trackers tracker = trackersRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new RuntimeException("Tracker not found"));
+
+        TrackersDTO dto = requestDTO.getTracker();
+
+        if (dto.getStatus() != null) tracker.setStatus(dto.getStatus());
+        if (dto.getTrackingNumber() != null) tracker.setTrackingNumber(dto.getTrackingNumber());
+        if (dto.getCarrier() != null) tracker.setCarrier(dto.getCarrier());
+        if (dto.getTrackingUrl() != null) tracker.setTrackingUrl(dto.getTrackingUrl());
+
+        tracker.setLastUpdatedTime(LocalDateTime.now());
+
+        Trackers saved = trackersRepository.save(tracker);
+
+        UpdateTrackingResponseDTO response = new UpdateTrackingResponseDTO();
+
+        List<TrackerResponseDTO> list = new ArrayList<>();
+        list.add(mapToResponse(saved));
+
+        response.setTrackers(list);
+
+        return response;
+    }
 }

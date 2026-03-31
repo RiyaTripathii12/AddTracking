@@ -6,10 +6,54 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
+
 @Data
 public class TrackerResponseDTO {
-    @JsonProperty("tracker_id")
-    private String trackerId;
+
+    @JsonProperty("transaction_id")
+    private String transactionId;
+
+    @JsonProperty("tracking_number")
+    private String trackingNumber;
+
+    @JsonProperty("carrier_name_other")
+    private String carrierNameOther;
+
+    @JsonProperty("postage_payment_id")
+    private String postagePaymentId;
+
+    @JsonProperty("notify_buyer")
+    private Boolean notifyBuyer;
+
+    private Integer quantity;
+
+    @JsonProperty("tracking_number_validated")
+    private Boolean trackingNumberValidated;
+
+    @JsonProperty("shipment_direction")
+    private String shipmentDirection;
+
+    @JsonProperty("shipment_uploader")
+    private String shipmentUploader;
+
+    @JsonProperty("account_id")
+    private String accountId;
+
+    @JsonProperty("tracking_url")
+    private String trackingUrl;
+
+    @JsonProperty("fulfillment_provider")
+    private String fulfillmentProvider;
+
+    @JsonProperty("tracking_number_type")
+    private String trackingNumberType;
+
+    private String status;
+
+    @JsonProperty("shipment_date")
+    private OffsetDateTime shipmentDate;
+
+    private String carrier;
 
     @JsonProperty("last_updated_time")
     private OffsetDateTime lastUpdatedTime;
